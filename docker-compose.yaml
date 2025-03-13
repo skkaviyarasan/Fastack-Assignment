@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./mern/backend
+    ports:
+      - "5050:5050" 
+    networks:
+      - mern_network
+    environment:
+      MONGO_URI: mongodb://mongo:27017/mydatabase  
+    depends_on:
+      - mongodb
+
+  frontend:
+    build: ./mern/frontend
+    ports:
+      - "5173:5173"  
+    networks:
+      - mern_network
+    environment:
+      REACT_APP_API_URL: http://backend:5050 
+
+  mongodb:
+    image: mongo:latest  
+    ports:
+      - "27017:27017"  
+    networks:
+      - mern_network
+    volumes:
+      - mongo-data:/data/db  
+
+  odoo:
+    image: odoo:latest
+    ports:
+      - "8069:8069"  # Odoo web interface
+      - "8072:8072"  # Odoo longpolling port
+    networks:
+      - mern_network
+    environment:
+      - HOST=postgres
+      - USER=odoo_user
+      - PASSWORD=odoo_passwd
+      - PGDATABASE=postgres
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    networks:
+      - mern_network
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=odoo_user
+      - POSTGRES_PASSWORD=odoo_passwd
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+networks:
+  mern_network:
+    driver: bridge 
+
+volumes:
+  mongo-data:
+    driver: local  # Persist MongoDB data locally
+  postgres-data:
+    driver: local  # Persist PostgreSQL data locally
